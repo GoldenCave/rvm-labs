@@ -1,0 +1,37 @@
+#Adapted from tutorial: https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/
+#and from: https://stackoverflow.com/questions/43217006/how-to-configure-a-kubernetes-multi-pod-deployment
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: rvm-forecast-1
+  labels:
+    run: rvm-forecast-1
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    run: rvm-forecast-1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rvm-forecast-1
+spec:
+  selector:
+    matchLabels:
+      run: rvm-forecast-1
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: rvm-forecast-1
+    spec:
+      containers:
+      - name: rvm-forecast-1
+        image: goldencave/dotnet6weatherforecast
+        ports:
+        - containerPort: 80

@@ -21,21 +21,29 @@ public class WeatherForecastController : ControllerBase
         _configuration = configuration;
     }
 
-    [HttpGet(Name = "GetWeatherForecast(Downstream)")]
-    public async Task<IEnumerable<WeatherForecast>> Get()
+    [HttpGet(Name = "GetWeatherForecast")]
+    public IEnumerable<WeatherForecast> Get()
+    {
+        return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+        {
+            Date = DateTime.Now.AddDays(index),
+            TemperatureC = Random.Shared.Next(-20, 55),
+            Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+        })
+        .ToArray();
+    }
+    
+    [HttpGet("downstream", Name = "GetWeatherForecast(Downstream)")]
+    public async Task<string> GetDownstream()
     {
         var client = new HttpClient();
         var url = _configuration.GetSection("DownstreamUrl").Get<string>();
-        _logger.LogInformation($"Making call to {url}/weatherforcast");
-        var result = await client.GetAsync($"{url}/weatherforecast");
+        var relativePath = _configuration.GetSection("DownstreamRelativePath").Get<string>() ?? string.Empty;
+        
+        _logger.LogInformation($"Making call to {url}/{relativePath}");
+        var result = await client.GetAsync($"{url}/{relativePath}");
         result.EnsureSuccessStatusCode();
         var response = await result.Content.ReadAsStringAsync();
-        _logger.LogInformation("Deserializing!");
-        var forecasts = JsonSerializer.Deserialize<IEnumerable<WeatherForecast>>(response, 
-            new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-        return forecasts!;
+        return response!;
     }
 }
